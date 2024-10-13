@@ -70,15 +70,18 @@ contract DiscreteStakingModel {
 
 
     function earned(address _account) public view returns (uint256) {
-        uint256 balance = userBalance[_account];
-        return balance * (rewardPerTokenStored - userRewardPerTokenPaid[_account]);
+        return
+        (balanceOf[_account] *
+        (rewardPerToken() - userRewardPerTokenPaid[_account])) / 1e18 +
+        rewards[_account];
     }
 
     function getReward() public updateReward(msg.sender) {
-        uint256 reward = earned(msg.sender);
-        require(reward > 0, "no reward available");
-        rewardsToken.transfer(msg.sender, reward);
-        emit Reward(msg.sender, reward);
+        uint reward = rewards[msg.sender];
+        if (reward > 0) {
+            rewards[msg.sender] = 0;
+            rewardsToken.transfer(msg.sender, reward);
+        }
     }
 
 
@@ -90,6 +93,7 @@ contract DiscreteStakingModel {
         rewardPerTokenStored +
         ((rewardRate * (lastTimeRewardApplicable() - updatedAt)) * 1e18) /
         totalSupply;
+        // 1e18的意思为10^18，是10的18次方，扩大显示的位数
     }
 
 
@@ -100,8 +104,6 @@ contract DiscreteStakingModel {
     function _min(uint x, uint y) private pure returns (uint) {
         return x <= y ? x : y;
     }
-
-
 
 
 }
